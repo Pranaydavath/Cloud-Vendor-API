@@ -5,123 +5,175 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cloud Vendor Management</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <style>
         :root {
-            --primary-color: #4f46e5;
-            --secondary-color: #10b981;
-            --background-color: #f3f4f6;
-            --card-background: #ffffff;
-            --text-color: #1f2937;
-            --subtle-text-color: #6b7280;
-            --border-color: #e5e7eb;
+            --primary-color: #4338ca; /* Indigo-700 */
+            --secondary-color: #059669; /* Emerald-600 */
+            --danger-color: #e11d48; /* Rose-600 */
+            --card-background: rgba(255, 255, 255, 0.9); /* Slightly transparent white */
+            --text-color-dark: #1f2937; /* Gray-800 */
+            --text-color-light: #f9fafb; /* Gray-50 */
+            --subtle-text-color: #4b5563; /* Gray-600 */
+            --border-color: #d1d5db; /* Gray-300 */
+            --hover-row-color: rgba(229, 231, 235, 0.7); /* Gray-200 with transparency */
         }
         body {
-            background-color: var(--background-color);
-            color: var(--text-color);
+            background: linear-gradient(to right bottom, #6366f1, #a855f7, #ec4899); /* Indigo -> Purple -> Pink */
+            color: var(--text-color-dark);
             font-family: 'Inter', sans-serif;
+            min-height: 100vh;
         }
         .modal-backdrop {
             position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            background-color: rgba(0, 0, 0, 0.5);
+            background-color: rgba(0, 0, 0, 0.7);
             display: flex; justify-content: center; align-items: center; z-index: 50;
+            opacity: 0; transition: opacity 0.2s ease-in-out; pointer-events: none;
         }
+        .modal-backdrop.show { opacity: 1; pointer-events: auto; }
         .modal {
-            background-color: var(--card-background); padding: 2rem; border-radius: 0.75rem;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            background-color: white; padding: 2rem; border-radius: 0.75rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.3);
             width: 90%; max-width: 500px;
+            transform: scale(0.95); transition: transform 0.2s ease-in-out;
         }
+        .modal-backdrop.show .modal { transform: scale(1); }
         .toast {
             position: fixed; bottom: 20px; right: 20px; padding: 1rem 1.5rem;
             border-radius: 0.5rem; color: white; opacity: 0;
             transform: translateY(20px);
-            transition: opacity 0.3s, transform 0.3s;
-            z-index: 100;
+            transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+            z-index: 100; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
         }
         .toast.show { opacity: 1; transform: translateY(0); }
         .toast.success { background-color: var(--secondary-color); }
-        .toast.error { background-color: #ef4444; }
+        .toast.error { background-color: var(--danger-color); }
+
+        .btn-spinner {
+            border: 2px solid rgba(255, 255, 255, 0.3); border-left-color: #ffffff;
+            border-radius: 50%; width: 1rem; height: 1rem;
+            animation: spin 1s linear infinite; display: inline-block;
+            margin-right: 0.5rem; vertical-align: middle;
+        }
         @keyframes spin { to { transform: rotate(360deg); } }
+
         .loader {
-            border: 4px solid rgba(0, 0, 0, 0.1);
-            border-left-color: var(--primary-color);
+            border: 4px solid rgba(255, 255, 255, 0.2); border-left-color: var(--primary-color);
             border-radius: 50%; width: 40px; height: 40px;
             animation: spin 1s linear infinite;
+        }
+
+        input:focus {
+            outline: 2px solid transparent; outline-offset: 2px;
+            --tw-ring-color: var(--primary-color);
+            box-shadow: 0 0 0 2px var(--tw-ring-color);
+            border-color: var(--primary-color);
+        }
+        tbody tr:nth-child(odd) { background-color: rgba(249, 250, 251, 0.7); }
+        tbody tr { transition: background-color 0.15s ease-in-out; }
+        tbody tr:hover { background-color: var(--hover-row-color); }
+        thead { background-color: rgba(243, 244, 246, 0.85); }
+
+        .content-card {
+            background-color: var(--card-background);
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
     </style>
     <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
 </head>
-<body class="antialiased">
+<body class="antialiased text-gray-800">
+
+<nav class="bg-indigo-900 shadow-lg sticky top-0 z-40">
+    <div class="container mx-auto px-4 md:px-8">
+        <div class="flex items-center justify-between h-16">
+            <div class="flex items-center">
+                <i class="fas fa-cloud text-white text-3xl mr-3 opacity-90"></i>
+                <span class="text-white text-xl font-bold tracking-tight">Cloud Vendor Manager</span>
+            </div>
+        </div>
+    </div>
+</nav>
 
 <div id="app" class="container mx-auto p-4 md:p-8">
 
-    <header class="mb-8">
-        <h1 class="text-4xl font-bold text-gray-800">Cloud Vendor Dashboard</h1>
-        <p class="text-lg text-gray-500 mt-1">Manage your cloud vendor information efficiently.</p>
-    </header>
-
     <main>
-        <div class="bg-white rounded-xl shadow-md p-6 mb-8">
-            <h2 id="form-title" class="text-2xl font-semibold mb-4 text-gray-700">Add New Vendor</h2>
+        <div class="content-card rounded-xl shadow-xl p-6 md:p-8 mb-8">
+            <h2 id="form-title" class="text-3xl font-bold mb-6 text-indigo-800">Add New Vendor</h2>
             <form id="vendor-form" class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <!-- *** CORRECTED VENDOR ID INPUT FIELD *** -->
                 <div>
-                    <label for="vendorId" class="block text-sm font-medium text-gray-600 mb-1">Vendor ID</label>
-                    <input type="text" id="vendorId" name="vendorId" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition bg-gray-50 read-only:bg-gray-200 read-only:cursor-not-allowed">
+                    <label for="vendorId" class="block text-sm font-medium text-gray-700 mb-1">Vendor ID</label>
+                    <input type="text" id="vendorId" name="vendorId" required placeholder="Unique ID (e.g., V001)"
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-indigo-500 transition duration-150 ease-in-out bg-white/70 read-only:bg-gray-200/70 read-only:cursor-not-allowed read-only:text-gray-500 shadow-sm">
                 </div>
                 <div>
-                    <label for="vendorName" class="block text-sm font-medium text-gray-600 mb-1">Vendor Name</label>
-                    <input type="text" id="vendorName" name="vendorName" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                    <label for="vendorName" class="block text-sm font-medium text-gray-700 mb-1">Vendor Name</label>
+                    <input type="text" id="vendorName" name="vendorName" required placeholder="Company Name"
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-indigo-500 transition duration-150 ease-in-out bg-white/70 shadow-sm">
                 </div>
                 <div>
-                    <label for="vendorPhoneNumber" class="block text-sm font-medium text-gray-600 mb-1">Phone Number</label>
-                    <input type="text" id="vendorPhoneNumber" name="vendorPhoneNumber" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                    <label for="vendorPhoneNumber" class="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                    <input type="tel" id="vendorPhoneNumber" name="vendorPhoneNumber" required placeholder="e.g., 123-456-7890"
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-indigo-500 transition duration-150 ease-in-out bg-white/70 shadow-sm">
                 </div>
                 <div class="md:col-span-2">
-                    <label for="vendorAddress" class="block text-sm font-medium text-gray-600 mb-1">Address</label>
-                    <input type="text" id="vendorAddress" name="vendorAddress" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                    <label for="vendorAddress" class="block text-sm font-medium text-gray-700 mb-1">Address</label>
+                    <input type="text" id="vendorAddress" name="vendorAddress" required placeholder="Street Address, City"
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-indigo-500 transition duration-150 ease-in-out bg-white/70 shadow-sm">
                 </div>
-                <div class="md:col-span-2 flex justify-end space-x-4">
-                    <button type="button" id="cancel-edit-btn" class="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition hidden">Cancel</button>
-                    <button type="submit" id="submit-btn" class="px-6 py-2 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition">
-                        Add Vendor
+                <div class="md:col-span-2 flex justify-end space-x-4 mt-4">
+                    <button type="button" id="cancel-edit-btn"
+                            class="px-5 py-2 bg-gray-300 text-gray-800 font-medium rounded-lg hover:bg-gray-400 active:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-1 transition duration-150 ease-in-out hidden shadow">
+                        Cancel
+                    </button>
+                    <button type="submit" id="submit-btn"
+                            class="inline-flex items-center justify-center px-5 py-2 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 active:bg-indigo-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1 transition duration-150 ease-in-out disabled:opacity-60 disabled:cursor-not-allowed shadow-md hover:shadow-lg">
+                        <span id="submit-spinner" class="btn-spinner hidden"></span>
+                        <span id="submit-btn-text">Add Vendor</span>
                     </button>
                 </div>
             </form>
         </div>
 
-        <div class="bg-white rounded-xl shadow-md overflow-hidden">
-            <div class="p-6 border-b border-gray-200">
-                <h2 class="text-2xl font-semibold text-gray-700">Vendor List</h2>
+        <div class="content-card rounded-xl shadow-xl overflow-hidden">
+            <div class="p-6 border-b border-gray-200/50">
+                <h2 class="text-3xl font-bold text-indigo-800">Vendor List</h2>
             </div>
-            <div id="loader-container" class="flex justify-center items-center h-48">
+            <div id="loader-container" class="flex justify-center items-center h-48 bg-white/30">
                 <div class="loader"></div>
             </div>
             <div id="vendor-list-container" class="hidden">
-                <table id="vendor-table" class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
-                    <tr>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name & ID</th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Address</th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
-                        <th scope="col" class="relative px-6 py-3"><span class="sr-only">Actions</span></th>
-                    </tr>
-                    </thead>
-                    <tbody id="vendor-table-body" class="bg-white divide-y divide-gray-200">
-                    </tbody>
-                </table>
-                <p id="no-vendors-message" class="text-center py-12 text-gray-500 hidden">No vendors found. Add one using the form above!</p>
+                <div class="overflow-x-auto">
+                    <table id="vendor-table" class="min-w-full">
+                        <thead class="sticky top-0 z-10">
+                        <tr>
+                            <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Name & ID</th>
+                            <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider hidden md:table-cell">Address</th>
+                            <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Phone</th>
+                            <th scope="col" class="relative px-6 py-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
+                        </tr>
+                        </thead>
+                        <tbody id="vendor-table-body" class="divide-y divide-gray-200/30">
+                        </tbody>
+                    </table>
+                </div>
+                <p id="no-vendors-message" class="text-center py-16 text-gray-600 font-medium hidden bg-white/30">No vendors found. Add one using the form above!</p>
             </div>
         </div>
     </main>
+
+    <footer class="text-center mt-12 text-sm text-indigo-100 opacity-75">
+        Cloud Vendor App &copy; 2025
+    </footer>
 </div>
 
-<div id="delete-modal" class="modal-backdrop hidden">
+<div id="delete-modal" class="modal-backdrop">
     <div class="modal">
-        <h3 class="text-xl font-bold mb-4">Confirm Deletion</h3>
-        <p class="text-gray-600 mb-6">Are you sure you want to delete vendor "<span id="vendor-name-to-delete" class="font-semibold"></span>"? This action cannot be undone.</p>
+        <h3 class="text-xl font-semibold mb-4 text-gray-800">Confirm Deletion</h3>
+        <p class="text-gray-700 mb-6">Are you sure you want to delete vendor "<strong id="vendor-name-to-delete" class="font-medium text-gray-800"></strong>"? This action cannot be undone.</p>
         <div class="flex justify-end space-x-4">
-            <button id="cancel-delete-btn" class="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition">Cancel</button>
-            <button id="confirm-delete-btn" class="px-6 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition">Delete</button>
+            <button id="cancel-delete-btn" class="px-5 py-2 bg-gray-300 text-gray-800 font-medium rounded-lg hover:bg-gray-400 active:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-1 transition duration-150 ease-in-out shadow">Cancel</button>
+            <button id="confirm-delete-btn" class="px-5 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 active:bg-red-800 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-1 transition duration-150 ease-in-out shadow-md hover:shadow-lg">Delete</button>
         </div>
     </div>
 </div>
@@ -129,12 +181,18 @@
 <div id="toast" class="toast"></div>
 
 <script>
+    // --- Paste the JavaScript code from the previous response here ---
+    // (The JavaScript code itself doesn't need changes for this styling update)
     document.addEventListener('DOMContentLoaded', () => {
+        // --- API Base URL ---
         const API_BASE_URL = 'https://cloud-vendor-api-qkiy.onrender.com/cloudvendor';
 
+        // --- DOM Elements ---
         const vendorForm = document.getElementById('vendor-form');
         const formTitle = document.getElementById('form-title');
         const submitBtn = document.getElementById('submit-btn');
+        const submitBtnText = document.getElementById('submit-btn-text');
+        const submitSpinner = document.getElementById('submit-spinner');
         const cancelEditBtn = document.getElementById('cancel-edit-btn');
         const vendorIdInput = document.getElementById('vendorId');
         const vendorTableBody = document.getElementById('vendor-table-body');
@@ -147,32 +205,39 @@
         const cancelDeleteBtn = document.getElementById('cancel-delete-btn');
         const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
 
+        // --- State Variables ---
         let vendorToDeleteId = null;
         let isEditMode = false;
+        let isLoading = false; // Tracks API call state for submit button spinner
 
+        // --- API Helper ---
         const api = {
             async request(endpoint = '', options = {}) {
+                setLoading(true); // Start loading state
                 try {
                     const response = await fetch(`${API_BASE_URL}${endpoint}`, options);
                     if (!response.ok) {
                         let errorData;
-                        try {
-                            errorData = await response.json();
-                        } catch (e) {
-                            errorData = { message: `HTTP error! Status: ${response.status}` };
-                        }
-                        const errorMessage = errorData.message || `An unknown error occurred.`;
-                        throw new Error(errorMessage);
+                        try { errorData = await response.json(); }
+                        catch (e) { errorData = { message: `HTTP error! Status: ${response.status}` }; }
+                        // Try to parse Spring Boot error structure if available
+                        const detailMessage = errorData?.data?.message || errorData?.message || `An unknown error occurred (Status: ${response.status}).`;
+                        throw new Error(detailMessage);
                     }
                     const contentType = response.headers.get("content-type");
+                    // Handle JSON or Text responses
                     if (contentType?.includes("application/json")) {
                         return response.json();
                     }
-                    return response.text();
+                    // Check for empty response or plain text success messages from backend
+                    const text = await response.text();
+                    return text ? text : { success: true }; // Return text or a generic success object if empty
                 } catch (error) {
                     console.error('API Request Error:', error.message);
                     showToast(error.message, 'error');
-                    throw error;
+                    throw error; // Re-throw to signal failure to the caller
+                } finally {
+                    setLoading(false); // Stop loading state
                 }
             },
             get() { return this.request(); },
@@ -181,27 +246,37 @@
             delete(vendorId) { return this.request(`/${vendorId}`, { method: 'DELETE' }); }
         };
 
+        // --- UI Update Functions ---
         const renderVendors = (vendors) => {
-            vendorTableBody.innerHTML = '';
-            if (vendors?.length > 0) {
+            vendorTableBody.innerHTML = ''; // Clear previous entries
+            if (vendors && vendors.length > 0) {
                 vendors.forEach(vendor => {
-                    const row = document.createElement('tr');
+                    const row = vendorTableBody.insertRow(); // Efficient way to add rows
+                    // Add hover effect class
+                    row.className = 'transition duration-150 ease-in-out';
+                    // Use nullish coalescing (??) for safer defaults
                     row.innerHTML = `
                         <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="text-sm font-medium text-gray-900">${vendor.vendorName}</div>
-                            <div class="text-sm text-gray-500">${vendor.vendorId}</div>
+                            <div class="text-sm font-semibold text-gray-900">${vendor.vendorName ?? 'N/A'}</div>
+                            <div class="text-xs text-gray-500">${vendor.vendorId ?? 'N/A'}</div>
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${vendor.vendorAddress}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${vendor.vendorPhoneNumber}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                            <button data-id="${vendor.vendorId}" class="edit-btn text-indigo-600 hover:text-indigo-900 mr-4">Edit</button>
-                            <button data-id="${vendor.vendorId}" data-name="${vendor.vendorName}" class="delete-btn text-red-600 hover:text-red-900">Delete</button>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 hidden md:table-cell">${vendor.vendorAddress ?? 'N/A'}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${vendor.vendorPhoneNumber ?? 'N/A'}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-3">
+                            <button data-id="${vendor.vendorId}" class="edit-btn text-indigo-600 hover:text-indigo-800 transition" title="Edit ${vendor.vendorName ?? ''}">
+                                <i class="fas fa-pencil-alt fa-fw"></i><span class="sr-only">Edit</span>
+                            </button>
+                            <button data-id="${vendor.vendorId}" data-name="${vendor.vendorName ?? ''}" class="delete-btn text-red-600 hover:text-red-800 transition" title="Delete ${vendor.vendorName ?? ''}">
+                                <i class="fas fa-trash-alt fa-fw"></i><span class="sr-only">Delete</span>
+                            </button>
                         </td>`;
-                    vendorTableBody.appendChild(row);
                 });
                 noVendorsMessage.classList.add('hidden');
+                vendorListContainer.classList.remove('hidden');
             } else {
+                noVendorsMessage.textContent = 'No vendors found. Add one using the form above!'; // Reset message
                 noVendorsMessage.classList.remove('hidden');
+                vendorListContainer.classList.add('hidden');
             }
         };
 
@@ -209,108 +284,187 @@
             loader.classList.remove('hidden', 'flex');
             loader.classList.add('flex');
             vendorListContainer.classList.add('hidden');
+            noVendorsMessage.classList.add('hidden');
             try {
-                const vendors = await api.get();
-                renderVendors(vendors);
+                // Adjust data access based on potential ResponseHandler nesting
+                const response = await api.get();
+                // Check if response is the array directly or nested under 'data'
+                const vendors = Array.isArray(response) ? response : (response && typeof response === 'object' && response.data) ? response.data : [];
+                renderVendors(vendors || []); // Ensure we pass an array
+            } catch (error) {
+                noVendorsMessage.textContent = 'Failed to load vendors. Please try refreshing.';
+                noVendorsMessage.classList.remove('hidden');
             } finally {
                 loader.classList.add('hidden');
-                vendorListContainer.classList.remove('hidden');
+                loader.classList.remove('flex');
             }
         };
+
 
         const resetForm = () => {
             vendorForm.reset();
             formTitle.textContent = 'Add New Vendor';
-            submitBtn.textContent = 'Add Vendor';
+            formTitle.classList.remove('text-green-700'); // Ensure title color reset
+            formTitle.classList.add('text-indigo-800');
+            submitBtnText.textContent = 'Add Vendor'; // Reset button text via dedicated span
             cancelEditBtn.classList.add('hidden');
             isEditMode = false;
-            vendorIdInput.value = '';
+            vendorIdInput.value = ''; // Ensure ID is cleared
             vendorIdInput.readOnly = false;
+            // Remove readonly styling
+            vendorIdInput.classList.remove('read-only:bg-gray-200/70', 'read-only:cursor-not-allowed', 'read-only:text-gray-500');
         };
 
         const startEditMode = async (vendorId) => {
             try {
-                const vendors = await api.get();
-                const vendor = vendors.find(v => v.vendorId === vendorId);
+                // Fetch specific vendor data for editing
+                const response = await api.request(`/${vendorId}`); // Assuming GET /{id} endpoint
+                const vendor = response?.data; // Access data potentially nested by ResponseHandler
+
                 if (vendor) {
                     isEditMode = true;
-                    formTitle.textContent = 'Edit Vendor';
-                    submitBtn.textContent = 'Update Vendor';
+                    formTitle.textContent = 'Edit Vendor Details';
+                    formTitle.classList.remove('text-indigo-800'); // Change title color for edit mode
+                    formTitle.classList.add('text-green-700');
+                    submitBtnText.textContent = 'Update Vendor'; // Use text span
                     cancelEditBtn.classList.remove('hidden');
-                    vendorIdInput.value = vendor.vendorId;
+
+                    // Populate form safely using ??
+                    vendorIdInput.value = vendor.vendorId ?? '';
                     vendorIdInput.readOnly = true;
-                    vendorForm.vendorName.value = vendor.vendorName;
-                    vendorForm.vendorAddress.value = vendor.vendorAddress;
-                    vendorForm.vendorPhoneNumber.value = vendor.vendorPhoneNumber;
+                    // Add readonly styling
+                    vendorIdInput.classList.add('read-only:bg-gray-200/70', 'read-only:cursor-not-allowed', 'read-only:text-gray-500');
+                    vendorForm.vendorName.value = vendor.vendorName ?? '';
+                    vendorForm.vendorAddress.value = vendor.vendorAddress ?? '';
+                    vendorForm.vendorPhoneNumber.value = vendor.vendorPhoneNumber ?? '';
+
                     window.scrollTo({ top: 0, behavior: 'smooth' });
+                    vendorForm.vendorName.focus(); // Focus on first editable field
+                } else {
+                    showToast('Vendor not found. It might have been deleted.', 'error');
+                    loadVendors(); // Refresh list if vendor not found during edit attempt
                 }
             } catch (error) {
-                showToast('Could not load vendor data to edit.', 'error');
+                showToast(`Could not load vendor data: ${error.message}`, 'error');
             }
         };
 
+
         const showToast = (message, type = 'success') => {
             toast.textContent = message;
-            toast.className = `toast show ${type}`;
-            setTimeout(() => { toast.classList.remove('show'); }, 4000);
+            toast.className = `toast ${type}`; // Apply type class first
+            // Force reflow before adding 'show' for transition to work reliably
+            void toast.offsetWidth;
+            toast.classList.add('show');
+
+            // Set timeout to remove the 'show' class
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 4000); // 4 seconds duration
         };
 
+        // Show/Hide Modal Functions
+        const showDeleteModal = (vendorId, vendorName) => {
+            vendorToDeleteId = vendorId;
+            vendorNameToDelete.textContent = vendorName || 'this vendor';
+            deleteModal.classList.add('show');
+        };
+        const hideDeleteModal = () => {
+            deleteModal.classList.remove('show');
+            // Delay clearing ID to prevent issues if clicked rapidly
+            setTimeout(() => { vendorToDeleteId = null; }, 200); // Match transition duration
+        };
+
+        // Show/Hide Button Loading Spinner
+        const setLoading = (loading) => {
+            isLoading = loading;
+            if (loading) {
+                submitBtn.disabled = true;
+                submitSpinner.classList.remove('hidden');
+                submitBtnText.textContent = isEditMode ? 'Updating...' : 'Adding...'; // Update text via span
+            } else {
+                submitBtn.disabled = false;
+                submitSpinner.classList.add('hidden');
+                submitBtnText.textContent = isEditMode ? 'Update Vendor' : 'Add Vendor'; // Reset text via span
+            }
+        };
+
+
+        // --- Event Listeners ---
         vendorForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+            if (isLoading) return; // Prevent multiple submissions while loading
+
             const formData = new FormData(vendorForm);
             const vendorData = Object.fromEntries(formData.entries());
 
+            // Basic client-side validation
+            if (!vendorData.vendorId?.trim() || !vendorData.vendorName?.trim() || !vendorData.vendorAddress?.trim() || !vendorData.vendorPhoneNumber?.trim()) {
+                showToast('Please fill in all fields.', 'error');
+                return;
+            }
+
             try {
+                let successMessage = '';
                 if (isEditMode) {
-                    await api.put(vendorData);
-                    showToast('Vendor updated successfully!');
+                    await api.put(vendorData); // Handles loading state
+                    successMessage = 'Vendor updated successfully!';
                 } else {
-                    // *** THIS IS THE CORRECTED LOGIC ***
-                    // It now sends the complete vendorData object, including the user-entered ID.
-                    await api.post(vendorData);
-                    showToast('Vendor created successfully!');
+                    await api.post(vendorData); // Handles loading state
+                    successMessage = 'Vendor added successfully!';
                 }
+                showToast(successMessage, 'success');
                 resetForm();
-                await loadVendors();
+                await loadVendors(); // Refresh the list
             } catch (error) {
-                // Error toast is handled inside the api.request function
+                // Error toast is shown by api.request
+                console.error("Form submission failed:", error);
             }
         });
 
         cancelEditBtn.addEventListener('click', resetForm);
 
+        // Use event delegation on the table body for efficiency
         vendorTableBody.addEventListener('click', (e) => {
-            const target = e.target;
-            const vendorId = target.dataset.id;
-            if (target.classList.contains('edit-btn')) { startEditMode(vendorId); }
-            if (target.classList.contains('delete-btn')) {
-                vendorToDeleteId = vendorId;
-                vendorNameToDelete.textContent = target.dataset.name;
-                deleteModal.classList.remove('hidden');
+            const button = e.target.closest('button'); // Get the button element, even if icon is clicked
+            if (!button) return; // Ignore clicks not on buttons
+
+            const vendorId = button.dataset.id;
+            if (button.classList.contains('edit-btn')) {
+                startEditMode(vendorId);
+            } else if (button.classList.contains('delete-btn')) {
+                showDeleteModal(vendorId, button.dataset.name);
             }
         });
 
-        cancelDeleteBtn.addEventListener('click', () => {
-            deleteModal.classList.add('hidden');
-            vendorToDeleteId = null;
-        });
-
+        // Modal Button Listeners
+        cancelDeleteBtn.addEventListener('click', hideDeleteModal);
         confirmDeleteBtn.addEventListener('click', async () => {
-            if (vendorToDeleteId) {
+            if (vendorToDeleteId && !isLoading) { // Check isLoading for safety, although separate
                 try {
+                    // Consider adding a loading state specific to the delete button if needed
                     await api.delete(vendorToDeleteId);
-                    showToast('Vendor deleted successfully!');
+                    showToast('Vendor deleted successfully!', 'success');
+                    hideDeleteModal();
                     await loadVendors();
-                } finally {
-                    deleteModal.classList.add('hidden');
-                    vendorToDeleteId = null;
+                } catch(error) {
+                    // Error toast shown by api.request
+                    console.error("Deletion failed:", error);
+                    // Optionally keep modal open on error
                 }
             }
         });
 
+        // Optional: Close modal if backdrop clicked
+        deleteModal.addEventListener('click', (e) => {
+            if (e.target === deleteModal) { // Only if clicking the backdrop itself
+                hideDeleteModal();
+            }
+        });
+
+        // --- Initial Load ---
         loadVendors();
     });
 </script>
 </body>
 </html>
-
